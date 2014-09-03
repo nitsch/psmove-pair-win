@@ -40,7 +40,8 @@ Also note that the connection procedure is running in an endless loop, i.e. it w
 
 The program has been successfully tested on the following platforms:
 
-- Windows XP SP3, Microsoft Bluetooth stack
+- Windows XP SP3
+- Windows 7 SP1
 
 
 ## Contact
