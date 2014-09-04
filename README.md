@@ -20,7 +20,6 @@ To concentrate on the actual connection issue, the program is intentionally held
 
 1. The Move Motion Controller is already paired to the Bluetooth radio, i.e. the radio's BDADDR is programmed into the controller. You can use [PS Move API][1]'s `psmovepair` utility if you do not know how to do this.
 2. The controller is not already connected (neither via USB nor via Bluetooth).
-3. In the Windwos Bluetooth settings, the radio is configured to be discoverable and to accept incoming connections.
 
 
 ## Usage

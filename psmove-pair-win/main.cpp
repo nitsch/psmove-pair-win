@@ -170,6 +170,40 @@ std::vector< BLUETOOTH_DEVICE_INFO > getBluetoothDeviceInfos( HANDLE const hRadi
 }
 
 
+bool setUpBluetoothRadio( HANDLE const hRadio )
+{
+	// NOTE: Order matters for the following two operations: The radio must allow incoming
+	//       connections prior to being made discoverable.
+
+	//printf( "Connectable:  %d\n", BluetoothIsConnectable( hRadio )  != FALSE );
+	//printf( "Discoverable: %d\n", BluetoothIsDiscoverable( hRadio ) != FALSE );
+
+	if( ! BluetoothIsConnectable( hRadio ) )
+	{
+		printf( "Making radio accept incoming connections.\n" );
+		if( BluetoothEnableIncomingConnections( hRadio, TRUE ) == FALSE )
+		{
+			printError( "Failed to enable incoming connections" );
+		}
+	}
+
+	if( ! BluetoothIsDiscoverable( hRadio ) )
+	{
+		printf( "Making radio discoverable.\n" );
+		if( BluetoothEnableDiscovery( hRadio, TRUE ) == FALSE )
+		{
+			printError( "Failed to make radio discoverable" );
+		}
+	}
+
+	//printf( "Connectable:  %d\n", BluetoothIsConnectable( hRadio )  != FALSE );
+	//printf( "Discoverable: %d\n", BluetoothIsDiscoverable( hRadio ) != FALSE );
+
+	return ( BluetoothIsConnectable( hRadio ) != FALSE )
+			&& ( BluetoothIsDiscoverable( hRadio ) != FALSE );
+}
+
+
 void printBluetoothRadioInfo( HANDLE const hRadio )
 {
 	BLUETOOTH_RADIO_INFO radioInfo;
@@ -316,6 +350,12 @@ int main( int argc, char* argv[] )
 	}
 
 	HANDLE hRadio = chooseBluetoothRadio( radioHandles );
+
+	if( ! setUpBluetoothRadio( hRadio ) )
+	{
+		printError( "Failed to configure Bluetooth radio for use" );
+		return 0;
+	}
 
 
 	printf( "\n\n" );
