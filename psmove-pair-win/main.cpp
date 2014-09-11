@@ -36,6 +36,15 @@
 #include <vector>
 
 
+// the number of successive checks that we require to be sure the Bluetooth connection is indeed
+// properly established
+#define CONN_CHECK_NUM_TRIES 5
+
+// the delay (in milliseconds) between consecutive checks for a properly established Bluetooth
+// connection
+#define CONN_CHECK_DELAY 300
+
+
 bool g_exitRequested = false;
 
 
@@ -328,6 +337,42 @@ bool isHidServiceEnabled( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO const& devi
 }
 
 
+bool isConnectionEstablished( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
+{
+	// NOTE: Sometimes the Bluetooth connection appears to be established even though the Move
+	//       decided that it is not really connected yet. That is why we cannot simply stop trying
+	//       to connect after the first successful check. Instead, we require a minimum number of
+	//       successive successful checks to be sure.
+	
+	for( unsigned int i = 0; i < CONN_CHECK_NUM_TRIES; ++i )
+	{
+		// read device info again to check if we have a connection
+		DWORD result = BluetoothGetDeviceInfo( hRadio, &deviceInfo );
+		if( result != ERROR_SUCCESS )
+		{
+			printf( "\n" );
+			printError( "Failed to read device info", result );
+			return false;
+		}
+
+		if( deviceInfo.fConnected && deviceInfo.fRemembered && isHidServiceEnabled( hRadio, deviceInfo ) )
+		{
+			printf( "." );
+		}
+		else
+		{
+			printf( "\n" );
+			return false;
+		}
+
+		Sleep( CONN_CHECK_DELAY );
+	}
+
+	printf( "\n" );
+	return true;
+}
+
+
 int main( int argc, char* argv[] )
 {
 	g_exitRequested = false;
@@ -396,24 +441,13 @@ int main( int argc, char* argv[] )
 							}
 						}
 
-						// read device info again to check if we have a connection
-						DWORD result = BluetoothGetDeviceInfo( hRadio, &deviceInfo );
-						if( result != ERROR_SUCCESS )
+						printf( "- verifying successful connection " );
+						if( isConnectionEstablished( hRadio, deviceInfo ) )
 						{
-							printError( "Failed to read device info", result );
-						}
-						else
-						{
-							// if we have a connection, stop trying to connect
-							printf( "- verifying successful connection\n" );
-							if( deviceInfo.fConnected && deviceInfo.fRemembered && isHidServiceEnabled( hRadio, deviceInfo ) )
-							{
-								// TODO: Sometimes we get here even though the Move decided that it is not really connected
-								//       yet. That is why we cannot simply stop trying to connect. We could probably add a
-								//       little Sleep() before running the final check, or even check multiple times.
+							// TODO: If we have a connection, stop trying to connect this device.
+							//       For now, we will just keep on running endlessly.
 
-								printf( "- !!!! Successfully connected device %s !!!!\n", bdaddrToString( deviceInfo.Address ) );
-							}
+							printf( "- !!!! Successfully connected device %s !!!!\n", bdaddrToString( deviceInfo.Address ) );
 						}
 					}
 				}
