@@ -102,6 +102,20 @@ char* bdaddrToString( BLUETOOTH_ADDRESS address )
 	return buffer;
 }
 
+LPWSTR bdaddrToRegString(BLUETOOTH_ADDRESS address)
+{
+	static WCHAR buffer[13];
+
+	wsprintf(buffer, L"%02x%02x%02x%02x%02x%02x",
+		address.rgBytes[5],
+		address.rgBytes[4],
+		address.rgBytes[3],
+		address.rgBytes[2],
+		address.rgBytes[1],
+		address.rgBytes[0]);
+
+	return buffer;
+}
 
 std::vector< HANDLE > getBluetoothRadios()
 {
@@ -373,6 +387,105 @@ bool isConnectionEstablished( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO& device
 }
 
 
+bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
+{
+	HKEY key;
+
+	DWORD pvData;
+	DWORD dwData;
+	DWORD dwRet;
+	DWORD pdwType;
+
+	BLUETOOTH_RADIO_INFO radioInfo;
+	radioInfo.dwSize = sizeof(radioInfo);
+
+	dwRet = BluetoothGetRadioInfo(hRadio, &radioInfo);
+	if (dwRet != ERROR_SUCCESS)
+	{
+		printError("Failed to get radio info", dwRet);
+		return false;
+	}
+
+	WCHAR sSubkey[256];
+	wmemset(sSubkey, 0x0, 256);
+	wcscat(sSubkey, L"SYSTEM\\CurrentControlSet\\Services\\HidBth\\Parameters\\Devices\\");
+
+	auto sRadio = bdaddrToRegString(radioInfo.address);
+	wprintf(L"radioInfo.address: %s\n", sRadio);
+	wcscat(sSubkey, sRadio);
+
+	auto sDevice = bdaddrToRegString(deviceInfo.Address);
+	wprintf(L"deviceInfo.address: %s\n", sDevice);
+	wcscat(sSubkey, sDevice);
+
+	wprintf(L"sSubkey: %s\n", sSubkey);
+
+	dwRet = RegOpenKeyEx(HKEY_LOCAL_MACHINE, sSubkey, 0, KEY_READ | KEY_QUERY_VALUE | KEY_WOW64_64KEY | KEY_ALL_ACCESS, &key);
+	if (ERROR_SUCCESS == dwRet)
+	{
+		dwRet = RegGetValue(key, 0, L"VirtuallyCabled", RRF_RT_DWORD, &pdwType, &pvData, &dwData);
+		if (ERROR_SUCCESS == dwRet)
+		{
+			//printf("pdwType: %d\n", pdwType);
+			printf("Get VirtuallyCabled: %d\n", pvData);
+			//printf("dwData: %d\n", dwData);
+		}
+		else
+		{
+			printError("Failed to get registry value", dwRet);
+			// Ignore and continue
+		}
+
+		dwData = 1;
+		dwRet = RegSetValueEx(key, L"VirtuallyCabled", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD));
+		if (ERROR_SUCCESS == dwRet)
+		{
+			//printf("pvData: %d\n", pvData);
+			printf("Set VirtuallyCabled: %d\n", dwData);
+		}
+		else
+		{
+			printError("Failed to set registry value", dwRet);
+			RegCloseKey(key);
+			return false;
+		}
+		dwRet = RegSetValueEx(key, L"ConnectionAuthenticated", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD));
+		if (ERROR_SUCCESS == dwRet)
+		{
+			//printf("pvData: %d\n", pvData);
+			printf("Set VirtuallyCabled: %d\n", dwData);
+		}
+		else
+		{
+			printError("Failed to set registry value", dwRet);
+			RegCloseKey(key);
+			return false;
+		}
+		RegCloseKey(key);
+
+		/*
+		dwData = 0;
+		dwRet = RegGetValue(HKEY_LOCAL_MACHINE, sSubkey, L"VirtuallyCabled", RRF_RT_DWORD, &pdwType, &pvData, &dwData);
+		if (ERROR_SUCCESS == dwRet)
+		{
+			//printf("pdwType: %d\n", pdwType);
+			printf("Get VirtuallyCabled: %d\n", pvData);
+			//printf("dwData: %d\n", dwData);
+		}
+		else
+		{
+			printError("Failed to get registry value", dwRet);
+			// Ignore and continue
+		}*/
+	}
+	else
+	{
+		printError("Failed to open registry key", dwRet);
+		return false;
+	}
+	return true;
+}
+
 int main( int argc, char* argv[] )
 {
 	g_exitRequested = false;
@@ -439,6 +552,9 @@ int main( int argc, char* argv[] )
 							{
 								printError( "Failed to enable HID service", result );
 							}
+
+							// Registry Hack for Windows 8.1 x64
+							changeRegistry(hRadio, deviceInfo);
 						}
 
 						printf( "- verifying successful connection " );
