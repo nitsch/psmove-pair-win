@@ -11,7 +11,11 @@ This program manages to reliably establish the Bluetooth connection without usin
 
 I wrote this using Visual Studio 2010 and only tested the 32-bit build. If you are using the same setup, this should work out of the box.
 
-It should be easy to build this using other tools (like MinGW for instance) since this program is rather small and does not use anything too fancy.
+Builds using [MinGW-w64][4] 4.9.1 have also been tested successfully using the following:
+
+```
+g++ -std=c++11 -o psmove-pair-win.exe main.cpp -lbthprops -luuid
+```
 
 
 ## Prerequisites
@@ -51,5 +55,6 @@ Please let me know about your experience with the program! Either by reporting a
 [1]: https://github.com/thp/psmoveapi
 [2]: https://github.com/nitsch/psmove-pair-win
 [3]: https://groups.google.com/forum/#!aboutgroup/psmove
+[4]: http://sourceforge.net/projects/mingw-w64/
 
 

@@ -35,6 +35,11 @@
 #include <iostream>
 #include <vector>
 
+/* define flag that seems to be missing in MinGW */
+#ifndef BLUETOOTH_SERVICE_ENABLE
+#    define BLUETOOTH_SERVICE_ENABLE 0x01
+#endif
+
 
 // the number of successive checks that we require to be sure the Bluetooth connection is indeed
 // properly established
@@ -302,7 +307,7 @@ bool isMoveMotionController( BLUETOOTH_DEVICE_INFO const& deviceInfo )
 }
 
 
-bool isHidServiceEnabled( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO const& deviceInfo )
+bool isHidServiceEnabled( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 {
 	// retrieve number of installed services
 	DWORD numServices = 0;
@@ -434,7 +439,8 @@ int main( int argc, char* argv[] )
 						if( ! isHidServiceEnabled( hRadio, deviceInfo ) )
 						{
 							printf( "- enabling HID service\n" );
-							DWORD result = BluetoothSetServiceState( hRadio, &deviceInfo, &HumanInterfaceDeviceServiceClass_UUID, BLUETOOTH_SERVICE_ENABLE );
+							GUID service = HumanInterfaceDeviceServiceClass_UUID;
+							DWORD result = BluetoothSetServiceState( hRadio, &deviceInfo, &service, BLUETOOTH_SERVICE_ENABLE );
 							if( result != ERROR_SUCCESS )
 							{
 								printError( "Failed to enable HID service", result );
