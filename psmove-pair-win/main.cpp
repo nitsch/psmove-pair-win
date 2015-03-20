@@ -36,6 +36,22 @@
 #include <vector>
 
 
+// A value that indicates the time out for the inquiry, expressed in increments of 1.28 seconds.For example, an inquiry of 12.8 seconds has a cTimeoutMultiplier value of 10. The maximum value for this member is 48. When a value greater than 48 is used, the calling function immediately fails and returns
+#define GET_BT_DEVICES_TIMEOUT_MULTIPLIER 1 // 0.2  // 4
+
+// Every x loop issue a new inquiry
+#define BT_SCAN_NEW_INQUIRY 5
+
+// Sleep value between bt device scan
+// Recommondation: Value should be higher than GET_BT_DEVICES_TIMEOUT_MULTIPLIER * 1.28 * 1000
+#define SLEEP_BETWEEN_SCANS (unsigned int) GET_BT_DEVICES_TIMEOUT_MULTIPLIER * 1.28 * 1000 * 1.1
+
+// amount of connection retries
+#define CONN_RETRIES 80    //10_BAD   //5_BAD   //20   //60
+// the delay (in milliseconds) between connection retries
+#define CONN_DELAY   300   //800_BAD  //500_BAD //500  //100
+
+
 // the number of successive checks that we require to be sure the Bluetooth connection is indeed
 // properly established
 #define CONN_CHECK_NUM_TRIES 5
@@ -149,14 +165,14 @@ std::vector< HANDLE > getBluetoothRadios()
 }
 
 
-std::vector< BLUETOOTH_DEVICE_INFO > getBluetoothDeviceInfos( HANDLE const hRadio )
+std::vector< BLUETOOTH_DEVICE_INFO > getBluetoothDeviceInfos(HANDLE const hRadio, bool fIssueInquiry)
 {
 	std::vector< BLUETOOTH_DEVICE_INFO > deviceInfoList;
 
 	BLUETOOTH_DEVICE_SEARCH_PARAMS searchParams;
 	searchParams.dwSize               = sizeof( searchParams );
-	searchParams.cTimeoutMultiplier   = 4;
-	searchParams.fIssueInquiry        = FALSE;
+	searchParams.cTimeoutMultiplier   = GET_BT_DEVICES_TIMEOUT_MULTIPLIER;
+	searchParams.fIssueInquiry        = fIssueInquiry; // TRUE; // FALSE;
 	searchParams.fReturnAuthenticated = TRUE;
 	searchParams.fReturnConnected     = TRUE;
 	searchParams.fReturnRemembered    = TRUE;
@@ -358,31 +374,44 @@ bool isConnectionEstablished( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO& device
 	//       to connect after the first successful check. Instead, we require a minimum number of
 	//       successive successful checks to be sure.
 	
-	for( unsigned int i = 0; i < CONN_CHECK_NUM_TRIES; ++i )
+	for (unsigned int i = 0; i < CONN_CHECK_NUM_TRIES; ++i)
 	{
 		// read device info again to check if we have a connection
-		DWORD result = BluetoothGetDeviceInfo( hRadio, &deviceInfo );
-		if( result != ERROR_SUCCESS )
+		DWORD result = BluetoothGetDeviceInfo(hRadio, &deviceInfo);
+		if (result != ERROR_SUCCESS)
 		{
-			printf( "\n" );
-			printError( "Failed to read device info", result );
+			printf("\n");
+			printError("Failed to read device info", result);
 			return false;
 		}
 
-		if( deviceInfo.fConnected && deviceInfo.fRemembered && isHidServiceEnabled( hRadio, deviceInfo ) )
+		if (deviceInfo.fConnected)
 		{
-			printf( "." );
+			printf("C");
+		}
+		if (deviceInfo.fRemembered)
+		{
+			printf("R");
+		}
+		if (isHidServiceEnabled(hRadio, deviceInfo))
+		{
+			printf("E");
+		}
+
+		if (deviceInfo.fConnected && deviceInfo.fRemembered && isHidServiceEnabled(hRadio, deviceInfo))
+		{
+			printf(".");
 		}
 		else
 		{
-			printf( "\n" );
+			printf("\n");
 			return false;
 		}
 
-		Sleep( CONN_CHECK_DELAY );
+		Sleep(CONN_CHECK_DELAY);
 	}
 
-	printf( "\n" );
+	printf("\n");
 	return true;
 }
 
@@ -449,7 +478,7 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 			RegCloseKey(key);
 			return false;
 		}
-		dwRet = RegSetValueEx(key, L"ConnectionAuthenticated", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD));
+		/*dwRet = RegSetValueEx(key, L"ConnectionAuthenticated", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD));
 		if (ERROR_SUCCESS == dwRet)
 		{
 			//printf("pvData: %d\n", pvData);
@@ -460,7 +489,7 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 			printError("Failed to set registry value", dwRet);
 			RegCloseKey(key);
 			return false;
-		}
+		}*/
 		RegCloseKey(key);
 
 		/*
@@ -519,9 +548,11 @@ int main( int argc, char* argv[] )
 	printf( "\n\n" );
 	printf( "==== Connecting new controllers ====\n\n" );
 
+	unsigned int loop = 0;
+
 	while( ! g_exitRequested )
 	{
-		auto deviceInfoList = getBluetoothDeviceInfos( hRadio );
+		auto deviceInfoList = getBluetoothDeviceInfos(hRadio, 0==loop%BT_SCAN_NEW_INQUIRY);
 		if( deviceInfoList.empty() )
 		{
 			printf( "No Bluetooth devices found.\n" );
@@ -532,46 +563,84 @@ int main( int argc, char* argv[] )
 			{
 				BLUETOOTH_DEVICE_INFO deviceInfo = deviceInfoList[ i ];
 
-				printf( "  (%d)", i );
-				printBluetoothDeviceInfo( deviceInfo );
-				printf( "\n" );
+				printf( "Device: (%d)", i );
+				printBluetoothDeviceInfo(deviceInfo);
+				printf("\n");
 
-				if( isMoveMotionController( deviceInfo ) )
+				if (isMoveMotionController(deviceInfo))
 				{
-					printf( "device #%d: Move Motion Controller detected\n", i );
+					printf("device #%d: Move Motion Controller detected\n", i);
 
-					if( deviceInfo.fConnected )
+					for (size_t i = 0; i < CONN_RETRIES; ++i)
 					{
-						// enable HID service only if necessary
-						printf( "- checking HID service\n" );
-						if( ! isHidServiceEnabled( hRadio, deviceInfo ) )
+						DWORD result = BluetoothGetDeviceInfo(hRadio, &deviceInfo);
+						if (result != ERROR_SUCCESS)
 						{
-							printf( "- enabling HID service\n" );
-							DWORD result = BluetoothSetServiceState( hRadio, &deviceInfo, &HumanInterfaceDeviceServiceClass_UUID, BLUETOOTH_SERVICE_ENABLE );
-							if( result != ERROR_SUCCESS )
+							printError("Failed to read device info", result);
+							break;
+						}
+						
+						//result = BluetoothAuthenticateDevice(NULL, hRadio, &deviceInfo, L"0000", 4);
+						//if (result != ERROR_SUCCESS)
+						//{
+						//	printf("BluetoothAuthenticateDevice ret %d\n", result);
+						//}
+
+						if (deviceInfo.fConnected)
+						{
+							changeRegistry(hRadio, deviceInfo);
+
+							// enable HID service only if necessary
+							printf("- checking HID service\n");
+							if (!isHidServiceEnabled(hRadio, deviceInfo))
 							{
-								printError( "Failed to enable HID service", result );
+								printf("- enabling HID service\n");
+								DWORD result = BluetoothSetServiceState(hRadio, &deviceInfo, &HumanInterfaceDeviceServiceClass_UUID, BLUETOOTH_SERVICE_ENABLE);
+								if (result != ERROR_SUCCESS)
+								{
+									printError("Failed to enable HID service", result);
+									break;
+								}
+
+								changeRegistry(hRadio, deviceInfo);
 							}
 
-							// Registry Hack for Windows 8.1 x64
-							changeRegistry(hRadio, deviceInfo);
-						}
+							printf("- verifying successful connection ");
+							if (isConnectionEstablished(hRadio, deviceInfo))
+							{
+								// TODO: If we have a connection, stop trying to connect this device.
+								//       For now, we will just keep on running endlessly.
 
-						printf( "- verifying successful connection " );
-						if( isConnectionEstablished( hRadio, deviceInfo ) )
+								printf("- !!!! Successfully connected device %s !!!!\n", bdaddrToString(deviceInfo.Address));
+								break;
+							}
+
+							// If we do not exit here, VirtuallyCabled will be reseted ??
+							//g_exitRequested = true;
+							//break;
+						}
+						else
 						{
-							// TODO: If we have a connection, stop trying to connect this device.
-							//       For now, we will just keep on running endlessly.
-
-							printf( "- !!!! Successfully connected device %s !!!!\n", bdaddrToString( deviceInfo.Address ) );
+							//printf("Connected?\n");
 						}
+
+						Sleep(CONN_DELAY);
+
+					} // for CONN_RETRIES
+
+					if (!deviceInfo.fConnected)
+					{
+						BluetoothRemoveDevice(&deviceInfo.Address);
+						printf("Device removed - retry");
 					}
+					
 				}
 				printf( "\n" );
-			}
+			
+			} // for deviceInfoList
 		}
-
-		Sleep( 1000 );
+		loop++;
+		Sleep(SLEEP_BETWEEN_SCANS );
 	}
 
 
