@@ -452,19 +452,23 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 	dwRet = RegOpenKeyEx(HKEY_LOCAL_MACHINE, sSubkey, 0, KEY_READ | KEY_QUERY_VALUE | KEY_WOW64_64KEY | KEY_ALL_ACCESS, &key);
 	if (ERROR_SUCCESS == dwRet)
 	{
-		dwRet = RegGetValue(key, 0, L"VirtuallyCabled", RRF_RT_DWORD, &pdwType, &pvData, &dwData);
-		if (ERROR_SUCCESS == dwRet)
+		do
 		{
-			//printf("pdwType: %d\n", pdwType);
-			printf("Get VirtuallyCabled: %d\n", pvData);
-			//printf("dwData: %d\n", dwData);
-		}
-		else
-		{
-			printError("Failed to get registry value", dwRet);
-			// Ignore and continue
-		}
-
+			//dwRet = RegGetValue(key, 0, L"VirtuallyCabled", RRF_RT_DWORD, &pdwType, &pvData, &dwData);
+			dwRet = RegQueryValueEx(key, L"VirtuallyCabled", 0, &pdwType, &pvData, &dwData);
+			if (ERROR_SUCCESS == dwRet)
+			{
+				//printf("pdwType: %d\n", pdwType);
+				printf("Get VirtuallyCabled: %d\n", pvData);
+				//printf("dwData: %d\n", dwData);
+			}
+			else
+			{
+				printError("Failed to get registry value", dwRet);
+				// Ignore and continue
+			}
+		}while(ERROR_MORE_DATA == dwRet);
+		
 		dwData = 1;
 		dwRet = RegSetValueEx(key, L"VirtuallyCabled", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD));
 		if (ERROR_SUCCESS == dwRet)
