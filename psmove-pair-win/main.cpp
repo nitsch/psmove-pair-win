@@ -44,7 +44,7 @@
 
 
 // A value that indicates the time out for the inquiry, expressed in increments of 1.28 seconds.For example, an inquiry of 12.8 seconds has a cTimeoutMultiplier value of 10. The maximum value for this member is 48. When a value greater than 48 is used, the calling function immediately fails and returns
-#define GET_BT_DEVICES_TIMEOUT_MULTIPLIER 1 // 0.2  // 4
+#define GET_BT_DEVICES_TIMEOUT_MULTIPLIER 1
 
 // Every x loop issue a new inquiry
 #define BT_SCAN_NEW_INQUIRY 5
@@ -164,7 +164,7 @@ std::vector< BLUETOOTH_DEVICE_INFO > getBluetoothDeviceInfos( HANDLE const hRadi
 	BLUETOOTH_DEVICE_SEARCH_PARAMS searchParams;
 	searchParams.dwSize               = sizeof( searchParams );
 	searchParams.cTimeoutMultiplier   = GET_BT_DEVICES_TIMEOUT_MULTIPLIER;
-	searchParams.fIssueInquiry        = fIssueInquiry; // TRUE; // FALSE;
+	searchParams.fIssueInquiry        = fIssueInquiry;
 	searchParams.fReturnAuthenticated = TRUE;
 	searchParams.fReturnConnected     = TRUE;
 	searchParams.fReturnRemembered    = TRUE;
@@ -452,13 +452,10 @@ bool changeRegistry( HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 	{
 		do
 		{
-			//dwRet = RegGetValue(key, 0, L"VirtuallyCabled", RRF_RT_DWORD, &pdwType, &pvData, &dwData);
 			dwRet = RegQueryValueEx( key, L"VirtuallyCabled", 0, &pdwType, (LPBYTE) &pvData, &dwData );
 			if( ERROR_SUCCESS == dwRet )
 			{
-				//printf("pdwType: %d\n", pdwType);
 				printf( "Get VirtuallyCabled: %d\n", pvData );
-				//printf("dwData: %d\n", dwData);
 			}
 			else
 			{
@@ -472,7 +469,6 @@ bool changeRegistry( HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 		dwRet = RegSetValueEx( key, L"VirtuallyCabled", 0, REG_DWORD, (LPBYTE) &dwData, sizeof( DWORD ) );
 		if( ERROR_SUCCESS == dwRet )
 		{
-			//printf("pvData: %d\n", pvData);
 			printf( "Set VirtuallyCabled: %d\n", dwData );
 		}
 		else
@@ -481,34 +477,8 @@ bool changeRegistry( HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 			RegCloseKey( key );
 			return false;
 		}
-		/*dwRet = RegSetValueEx(key, L"ConnectionAuthenticated", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD));
-		if (ERROR_SUCCESS == dwRet)
-		{
-			//printf("pvData: %d\n", pvData);
-			printf("Set VirtuallyCabled: %d\n", dwData);
-		}
-		else
-		{
-			printError("Failed to set registry value", dwRet);
-			RegCloseKey(key);
-			return false;
-		}*/
-		RegCloseKey( key );
 
-		/*
-		dwData = 0;
-		dwRet = RegGetValue(HKEY_LOCAL_MACHINE, sSubkey, L"VirtuallyCabled", RRF_RT_DWORD, &pdwType, &pvData, &dwData);
-		if (ERROR_SUCCESS == dwRet)
-		{
-			//printf("pdwType: %d\n", pdwType);
-			printf("Get VirtuallyCabled: %d\n", pvData);
-			//printf("dwData: %d\n", dwData);
-		}
-		else
-		{
-			printError("Failed to get registry value", dwRet);
-			// Ignore and continue
-		}*/
+		RegCloseKey( key );
 	}
 	else
 	{
@@ -584,12 +554,6 @@ int main( int argc, char* argv[] )
 							break;
 						}
 						
-						//result = BluetoothAuthenticateDevice(NULL, hRadio, &deviceInfo, L"0000", 4);
-						//if (result != ERROR_SUCCESS)
-						//{
-						//	printf("BluetoothAuthenticateDevice ret %d\n", result);
-						//}
-
 						if( deviceInfo.fConnected )
 						{
 							changeRegistry( hRadio, deviceInfo );
@@ -619,14 +583,6 @@ int main( int argc, char* argv[] )
 								printf( "- !!!! Successfully connected device %s !!!!\n", bdaddrToString( deviceInfo.Address ) );
 								break;
 							}
-
-							// If we do not exit here, VirtuallyCabled will be reseted ??
-							//g_exitRequested = true;
-							//break;
-						}
-						else
-						{
-							//printf("Connected?\n");
 						}
 
 						Sleep( CONN_DELAY );
