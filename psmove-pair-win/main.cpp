@@ -457,7 +457,7 @@ bool changeRegistry( HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 			{
 				printf( "  - get VirtuallyCabled: %d\n", pvData );
 			}
-			else
+			else if( dwRet != ERROR_MORE_DATA )
 			{
 				printError( "Failed to get registry value", dwRet );
 				// Ignore and continue
