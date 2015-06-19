@@ -35,6 +35,11 @@
 #include <iostream>
 #include <vector>
 
+// define flag that seems to be missing in MinGW
+#ifndef BLUETOOTH_SERVICE_ENABLE
+#	define BLUETOOTH_SERVICE_ENABLE 0x01
+#endif
+
 
 // A value that indicates the time out for the inquiry, expressed in increments of 1.28 seconds.For example, an inquiry of 12.8 seconds has a cTimeoutMultiplier value of 10. The maximum value for this member is 48. When a value greater than 48 is used, the calling function immediately fails and returns
 #define GET_BT_DEVICES_TIMEOUT_MULTIPLIER 1 // 0.2  // 4
@@ -332,7 +337,7 @@ bool isMoveMotionController( BLUETOOTH_DEVICE_INFO const& deviceInfo )
 }
 
 
-bool isHidServiceEnabled( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO const& deviceInfo )
+bool isHidServiceEnabled( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 {
 	// retrieve number of installed services
 	DWORD numServices = 0;
@@ -455,7 +460,7 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 		do
 		{
 			//dwRet = RegGetValue(key, 0, L"VirtuallyCabled", RRF_RT_DWORD, &pdwType, &pvData, &dwData);
-			dwRet = RegQueryValueEx(key, L"VirtuallyCabled", 0, &pdwType, &pvData, &dwData);
+			dwRet = RegQueryValueEx(key, L"VirtuallyCabled", 0, &pdwType, (LPBYTE) &pvData, &dwData);
 			if (ERROR_SUCCESS == dwRet)
 			{
 				//printf("pdwType: %d\n", pdwType);
@@ -599,7 +604,8 @@ int main( int argc, char* argv[] )
 							if (!isHidServiceEnabled(hRadio, deviceInfo))
 							{
 								printf("- enabling HID service\n");
-								DWORD result = BluetoothSetServiceState(hRadio, &deviceInfo, &HumanInterfaceDeviceServiceClass_UUID, BLUETOOTH_SERVICE_ENABLE);
+								GUID service = HumanInterfaceDeviceServiceClass_UUID;
+								DWORD result = BluetoothSetServiceState(hRadio, &deviceInfo, &service, BLUETOOTH_SERVICE_ENABLE);
 								if (result != ERROR_SUCCESS)
 								{
 									printError("Failed to enable HID service", result);
