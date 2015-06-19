@@ -157,7 +157,7 @@ std::vector< HANDLE > getBluetoothRadios()
 }
 
 
-std::vector< BLUETOOTH_DEVICE_INFO > getBluetoothDeviceInfos(HANDLE const hRadio, bool fIssueInquiry)
+std::vector< BLUETOOTH_DEVICE_INFO > getBluetoothDeviceInfos( HANDLE const hRadio, bool fIssueInquiry )
 {
 	std::vector< BLUETOOTH_DEVICE_INFO > deviceInfoList;
 
@@ -365,50 +365,52 @@ bool isConnectionEstablished( HANDLE const hRadio, BLUETOOTH_DEVICE_INFO& device
 	//       decided that it is not really connected yet. That is why we cannot simply stop trying
 	//       to connect after the first successful check. Instead, we require a minimum number of
 	//       successive successful checks to be sure.
-	
-	for (unsigned int i = 0; i < CONN_CHECK_NUM_TRIES; ++i)
+
+	for( unsigned int i = 0; i < CONN_CHECK_NUM_TRIES; ++i )
 	{
 		// read device info again to check if we have a connection
 		DWORD result = BluetoothGetDeviceInfo(hRadio, &deviceInfo);
-		if (result != ERROR_SUCCESS)
+		if( result != ERROR_SUCCESS )
 		{
-			printf("\n");
-			printError("Failed to read device info", result);
+			printf( "\n" );
+			printError( "Failed to read device info", result );
 			return false;
 		}
 
-		if (deviceInfo.fConnected)
+		if( deviceInfo.fConnected )
 		{
-			printf("C");
-		}
-		if (deviceInfo.fRemembered)
-		{
-			printf("R");
-		}
-		if (isHidServiceEnabled(hRadio, deviceInfo))
-		{
-			printf("E");
+			printf( "C" );
 		}
 
-		if (deviceInfo.fConnected && deviceInfo.fRemembered && isHidServiceEnabled(hRadio, deviceInfo))
+		if( deviceInfo.fRemembered )
 		{
-			printf(".");
+			printf( "R" );
+		}
+
+		if( isHidServiceEnabled( hRadio, deviceInfo ) )
+		{
+			printf( "E" );
+		}
+
+		if( deviceInfo.fConnected && deviceInfo.fRemembered && isHidServiceEnabled( hRadio, deviceInfo ) )
+		{
+			printf( "." );
 		}
 		else
 		{
-			printf("\n");
+			printf( "\n" );
 			return false;
 		}
 
-		Sleep(CONN_CHECK_DELAY);
+		Sleep( CONN_CHECK_DELAY );
 	}
 
-	printf("\n");
+	printf( "\n" );
 	return true;
 }
 
 
-bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
+bool changeRegistry( HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 {
 	HKEY key;
 
@@ -418,12 +420,12 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 	DWORD pdwType;
 
 	BLUETOOTH_RADIO_INFO radioInfo;
-	radioInfo.dwSize = sizeof(radioInfo);
+	radioInfo.dwSize = sizeof( radioInfo );
 
-	dwRet = BluetoothGetRadioInfo(hRadio, &radioInfo);
-	if (dwRet != ERROR_SUCCESS)
+	dwRet = BluetoothGetRadioInfo( hRadio, &radioInfo );
+	if( dwRet != ERROR_SUCCESS )
 	{
-		printError("Failed to get radio info", dwRet);
+		printError( "Failed to get radio info", dwRet );
 		return false;
 	}
 
@@ -445,37 +447,38 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 
 	_tprintf( _T( "sSubkey: %s\n" ), sSubkey );
 
-	dwRet = RegOpenKeyEx(HKEY_LOCAL_MACHINE, sSubkey, 0, KEY_READ | KEY_QUERY_VALUE | KEY_WOW64_64KEY | KEY_ALL_ACCESS, &key);
-	if (ERROR_SUCCESS == dwRet)
+	dwRet = RegOpenKeyEx( HKEY_LOCAL_MACHINE, sSubkey, 0, KEY_READ | KEY_QUERY_VALUE | KEY_WOW64_64KEY | KEY_ALL_ACCESS, &key );
+	if( ERROR_SUCCESS == dwRet )
 	{
 		do
 		{
 			//dwRet = RegGetValue(key, 0, L"VirtuallyCabled", RRF_RT_DWORD, &pdwType, &pvData, &dwData);
-			dwRet = RegQueryValueEx(key, L"VirtuallyCabled", 0, &pdwType, (LPBYTE) &pvData, &dwData);
-			if (ERROR_SUCCESS == dwRet)
+			dwRet = RegQueryValueEx( key, L"VirtuallyCabled", 0, &pdwType, (LPBYTE) &pvData, &dwData );
+			if( ERROR_SUCCESS == dwRet )
 			{
 				//printf("pdwType: %d\n", pdwType);
-				printf("Get VirtuallyCabled: %d\n", pvData);
+				printf( "Get VirtuallyCabled: %d\n", pvData );
 				//printf("dwData: %d\n", dwData);
 			}
 			else
 			{
-				printError("Failed to get registry value", dwRet);
+				printError( "Failed to get registry value", dwRet );
 				// Ignore and continue
 			}
-		}while(ERROR_MORE_DATA == dwRet);
+		}
+		while( ERROR_MORE_DATA == dwRet );
 		
 		dwData = 1;
-		dwRet = RegSetValueEx(key, L"VirtuallyCabled", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD));
-		if (ERROR_SUCCESS == dwRet)
+		dwRet = RegSetValueEx( key, L"VirtuallyCabled", 0, REG_DWORD, (LPBYTE) &dwData, sizeof( DWORD ) );
+		if( ERROR_SUCCESS == dwRet )
 		{
 			//printf("pvData: %d\n", pvData);
-			printf("Set VirtuallyCabled: %d\n", dwData);
+			printf( "Set VirtuallyCabled: %d\n", dwData );
 		}
 		else
 		{
-			printError("Failed to set registry value", dwRet);
-			RegCloseKey(key);
+			printError( "Failed to set registry value", dwRet );
+			RegCloseKey( key );
 			return false;
 		}
 		/*dwRet = RegSetValueEx(key, L"ConnectionAuthenticated", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD));
@@ -490,7 +493,7 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 			RegCloseKey(key);
 			return false;
 		}*/
-		RegCloseKey(key);
+		RegCloseKey( key );
 
 		/*
 		dwData = 0;
@@ -509,9 +512,10 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 	}
 	else
 	{
-		printError("Failed to open registry key", dwRet);
+		printError( "Failed to open registry key", dwRet );
 		return false;
 	}
+
 	return true;
 }
 
@@ -552,7 +556,7 @@ int main( int argc, char* argv[] )
 
 	while( ! g_exitRequested )
 	{
-		auto deviceInfoList = getBluetoothDeviceInfos(hRadio, 0==loop%BT_SCAN_NEW_INQUIRY);
+		auto deviceInfoList = getBluetoothDeviceInfos(hRadio, 0 == loop % BT_SCAN_NEW_INQUIRY );
 		if( deviceInfoList.empty() )
 		{
 			printf( "No Bluetooth devices found.\n" );
@@ -564,19 +568,19 @@ int main( int argc, char* argv[] )
 				BLUETOOTH_DEVICE_INFO deviceInfo = deviceInfoList[ i ];
 
 				printf( "Device: (%d)", i );
-				printBluetoothDeviceInfo(deviceInfo);
-				printf("\n");
+				printBluetoothDeviceInfo( deviceInfo );
+				printf( "\n" );
 
-				if (isMoveMotionController(deviceInfo))
+				if( isMoveMotionController( deviceInfo ) )
 				{
-					printf("device #%d: Move Motion Controller detected\n", i);
+					printf( "device #%d: Move Motion Controller detected\n", i );
 
-					for (size_t i = 0; i < CONN_RETRIES; ++i)
+					for( size_t i = 0; i < CONN_RETRIES; ++i )
 					{
-						DWORD result = BluetoothGetDeviceInfo(hRadio, &deviceInfo);
-						if (result != ERROR_SUCCESS)
+						DWORD result = BluetoothGetDeviceInfo( hRadio, &deviceInfo );
+						if( result != ERROR_SUCCESS )
 						{
-							printError("Failed to read device info", result);
+							printError( "Failed to read device info", result );
 							break;
 						}
 						
@@ -586,33 +590,33 @@ int main( int argc, char* argv[] )
 						//	printf("BluetoothAuthenticateDevice ret %d\n", result);
 						//}
 
-						if (deviceInfo.fConnected)
+						if( deviceInfo.fConnected )
 						{
-							changeRegistry(hRadio, deviceInfo);
+							changeRegistry( hRadio, deviceInfo );
 
 							// enable HID service only if necessary
-							printf("- checking HID service\n");
-							if (!isHidServiceEnabled(hRadio, deviceInfo))
+							printf( "- checking HID service\n" );
+							if( ! isHidServiceEnabled( hRadio, deviceInfo ) )
 							{
-								printf("- enabling HID service\n");
+								printf( "- enabling HID service\n" );
 								GUID service = HumanInterfaceDeviceServiceClass_UUID;
-								DWORD result = BluetoothSetServiceState(hRadio, &deviceInfo, &service, BLUETOOTH_SERVICE_ENABLE);
-								if (result != ERROR_SUCCESS)
+								DWORD result = BluetoothSetServiceState( hRadio, &deviceInfo, &service, BLUETOOTH_SERVICE_ENABLE );
+								if( result != ERROR_SUCCESS )
 								{
-									printError("Failed to enable HID service", result);
+									printError( "Failed to enable HID service", result );
 									break;
 								}
 
-								changeRegistry(hRadio, deviceInfo);
+								changeRegistry( hRadio, deviceInfo );
 							}
 
-							printf("- verifying successful connection ");
-							if (isConnectionEstablished(hRadio, deviceInfo))
+							printf( "- verifying successful connection " );
+							if( isConnectionEstablished( hRadio, deviceInfo ) )
 							{
 								// TODO: If we have a connection, stop trying to connect this device.
 								//       For now, we will just keep on running endlessly.
 
-								printf("- !!!! Successfully connected device %s !!!!\n", bdaddrToString(deviceInfo.Address));
+								printf( "- !!!! Successfully connected device %s !!!!\n", bdaddrToString( deviceInfo.Address ) );
 								break;
 							}
 
@@ -625,14 +629,14 @@ int main( int argc, char* argv[] )
 							//printf("Connected?\n");
 						}
 
-						Sleep(CONN_DELAY);
+						Sleep( CONN_DELAY );
 
 					} // for CONN_RETRIES
 
-					if (!deviceInfo.fConnected)
+					if( ! deviceInfo.fConnected )
 					{
-						BluetoothRemoveDevice(&deviceInfo.Address);
-						printf("Device removed - retry");
+						BluetoothRemoveDevice( &deviceInfo.Address );
+						printf( "Device removed - retry" );
 					}
 					
 				}
@@ -640,8 +644,9 @@ int main( int argc, char* argv[] )
 			
 			} // for deviceInfoList
 		}
+
 		loop++;
-		Sleep(SLEEP_BETWEEN_SCANS );
+		Sleep( SLEEP_BETWEEN_SCANS );
 	}
 
 
