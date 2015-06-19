@@ -27,6 +27,8 @@
 
 #include <Windows.h>
 #include <BluetoothAPIs.h>
+#include <tchar.h>
+#include <strsafe.h>
 
 #include <conio.h>
 
@@ -119,21 +121,6 @@ char* bdaddrToString( BLUETOOTH_ADDRESS address )
 		address.rgBytes[ 2 ],
 		address.rgBytes[ 1 ],
 		address.rgBytes[ 0 ] );
-
-	return buffer;
-}
-
-LPWSTR bdaddrToRegString(BLUETOOTH_ADDRESS address)
-{
-	static WCHAR buffer[13];
-
-	wsprintf(buffer, L"%02x%02x%02x%02x%02x%02x",
-		address.rgBytes[5],
-		address.rgBytes[4],
-		address.rgBytes[3],
-		address.rgBytes[2],
-		address.rgBytes[1],
-		address.rgBytes[0]);
 
 	return buffer;
 }
@@ -440,19 +427,23 @@ bool changeRegistry(HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo)
 		return false;
 	}
 
-	WCHAR sSubkey[256];
-	wmemset(sSubkey, 0x0, 256);
-	wcscat(sSubkey, L"SYSTEM\\CurrentControlSet\\Services\\HidBth\\Parameters\\Devices\\");
+	TCHAR sSubkey[ 1024 ];
+	HRESULT res = StringCchPrintf(
+		sSubkey,
+		1024,
+		_T( "SYSTEM\\CurrentControlSet\\Services\\HidBth\\Parameters\\Devices\\%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x" ),
+		radioInfo.address.rgBytes[ 5 ], radioInfo.address.rgBytes[ 4 ], radioInfo.address.rgBytes[ 3 ],
+		radioInfo.address.rgBytes[ 2 ], radioInfo.address.rgBytes[ 1 ], radioInfo.address.rgBytes[ 0 ],
+		deviceInfo.Address.rgBytes[ 5 ], deviceInfo.Address.rgBytes[ 4 ], deviceInfo.Address.rgBytes[ 3 ],
+		deviceInfo.Address.rgBytes[ 2 ], deviceInfo.Address.rgBytes[ 1 ], deviceInfo.Address.rgBytes[ 0 ] );
 
-	auto sRadio = bdaddrToRegString(radioInfo.address);
-	wprintf(L"radioInfo.address: %s\n", sRadio);
-	wcscat(sSubkey, sRadio);
+	if( FAILED( res ) )
+	{
+		printError( "Failed to build registry subkey" );
+		return false;
+	}
 
-	auto sDevice = bdaddrToRegString(deviceInfo.Address);
-	wprintf(L"deviceInfo.address: %s\n", sDevice);
-	wcscat(sSubkey, sDevice);
-
-	wprintf(L"sSubkey: %s\n", sSubkey);
+	_tprintf( _T( "sSubkey: %s\n" ), sSubkey );
 
 	dwRet = RegOpenKeyEx(HKEY_LOCAL_MACHINE, sSubkey, 0, KEY_READ | KEY_QUERY_VALUE | KEY_WOW64_64KEY | KEY_ALL_ACCESS, &key);
 	if (ERROR_SUCCESS == dwRet)

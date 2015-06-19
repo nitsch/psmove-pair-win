@@ -14,7 +14,7 @@ I wrote this using Visual Studio 2010 and only tested the 32-bit build. If you a
 Builds using [MinGW-w64][4] 4.9.1 have also been tested successfully using the following:
 
 ```
-g++ -std=c++11 -o psmove-pair-win.exe main.cpp -lbthprops -luuid -DUNICODE
+g++ -std=c++11 -o psmove-pair-win.exe main.cpp -lbthprops -luuid -DUNICODE -D_UNICODE
 ```
 
 
