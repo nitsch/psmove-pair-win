@@ -445,7 +445,7 @@ bool changeRegistry( HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 		return false;
 	}
 
-	_tprintf( _T( "sSubkey: %s\n" ), sSubkey );
+	_tprintf( _T( "  - sSubkey: %s\n" ), sSubkey );
 
 	dwRet = RegOpenKeyEx( HKEY_LOCAL_MACHINE, sSubkey, 0, KEY_READ | KEY_QUERY_VALUE | KEY_WOW64_64KEY | KEY_ALL_ACCESS, &key );
 	if( ERROR_SUCCESS == dwRet )
@@ -455,7 +455,7 @@ bool changeRegistry( HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 			dwRet = RegQueryValueEx( key, L"VirtuallyCabled", 0, &pdwType, (LPBYTE) &pvData, &dwData );
 			if( ERROR_SUCCESS == dwRet )
 			{
-				printf( "Get VirtuallyCabled: %d\n", pvData );
+				printf( "  - get VirtuallyCabled: %d\n", pvData );
 			}
 			else
 			{
@@ -469,7 +469,7 @@ bool changeRegistry( HANDLE hRadio, BLUETOOTH_DEVICE_INFO& deviceInfo )
 		dwRet = RegSetValueEx( key, L"VirtuallyCabled", 0, REG_DWORD, (LPBYTE) &dwData, sizeof( DWORD ) );
 		if( ERROR_SUCCESS == dwRet )
 		{
-			printf( "Set VirtuallyCabled: %d\n", dwData );
+			printf( "  - set VirtuallyCabled: %d\n", dwData );
 		}
 		else
 		{
@@ -556,6 +556,7 @@ int main( int argc, char* argv[] )
 						
 						if( deviceInfo.fConnected )
 						{
+							printf( "- patching the registry\n" );
 							changeRegistry( hRadio, deviceInfo );
 
 							// enable HID service only if necessary
@@ -571,10 +572,11 @@ int main( int argc, char* argv[] )
 									break;
 								}
 
+								printf( "- patching the registry\n" );
 								changeRegistry( hRadio, deviceInfo );
 							}
 
-							printf( "- verifying successful connection " );
+							printf("- verifying successful connection ");
 							if( isConnectionEstablished( hRadio, deviceInfo ) )
 							{
 								// TODO: If we have a connection, stop trying to connect this device.
