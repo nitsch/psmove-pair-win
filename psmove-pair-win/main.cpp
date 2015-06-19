@@ -533,7 +533,7 @@ int main( int argc, char* argv[] )
 		}
 		else
 		{
-			for( size_t i = 0; i < deviceInfoList.size(); ++i )
+			for( size_t i = 0; i < deviceInfoList.size() && ! g_exitRequested; ++i )
 			{
 				BLUETOOTH_DEVICE_INFO deviceInfo = deviceInfoList[ i ];
 
@@ -545,7 +545,7 @@ int main( int argc, char* argv[] )
 				{
 					printf( "device #%d: Move Motion Controller detected\n", i );
 
-					for( size_t i = 0; i < CONN_RETRIES; ++i )
+					for( size_t i = 0; i < CONN_RETRIES && ! g_exitRequested; ++i )
 					{
 						DWORD result = BluetoothGetDeviceInfo( hRadio, &deviceInfo );
 						if( result != ERROR_SUCCESS )
