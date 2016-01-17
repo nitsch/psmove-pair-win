@@ -46,6 +46,7 @@ The program has been successfully tested on the following platforms:
 - Windows XP SP3
 - Windows 7 SP1
 - Windows 8.1 (x86 and x64)
+- Windows 10 (x64)
 
 
 ## Contact
