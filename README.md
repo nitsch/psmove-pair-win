@@ -1,5 +1,7 @@
 # psmove-pair-win
 
+**NOTE: This tool's functionality has been integrated into [PS Move API][1]'s `psmovepair` utility which does now fully support every version of Windows from XP up to 10. Please use `psmovepair` instead of this tool from now on!**
+
 A command-line tool for establishing a Bluetooth connection between a PlayStation Move Motion Controller and a Bluetooth radio on Windows.
 
 To the best of my knowledge, the only tools that manage a painless connection process of the Move on Windows use some kind of custom drivers. A lot of people have gotten a Bluetooth connection to work on Windows without these tools, usually in exhausting trial and error sessions. But it always seems to be a matter of the correct timing, or the altitude of the sun, or who knows what.
